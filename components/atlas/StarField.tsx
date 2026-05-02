@@ -3,8 +3,8 @@
 import React, { useMemo } from "react";
 
 /* ════════════════════════════════════════════════════════════
-   STARFIELD — twinkling stars that slowly flow / drift across
-   the sky (oscillating translations + distant drifting motes).
+   STARFIELD — twinkling stars that flow / drift across the sky
+   (oscillating translations + distant drifting motes).
 ================================================================ */
 
 type Star = {
@@ -35,12 +35,12 @@ function generateStars(count: number, seed = 1): Star[] {
       x: rand() * 100,
       y: rand() * 100,
       size: 0.6 + rand() * 1.6,
-      duration: 3 + rand() * 5,
+      duration: 1.6 + rand() * 2.8,
       delay: rand() * 6,
       hue: rand() > 0.78 ? "warm" : "cool",
       flowDx: Math.cos(angle) * dist,
       flowDy: Math.sin(angle) * dist,
-      flowDur: 12 + rand() * 22,
+      flowDur: 6 + rand() * 11,
     });
   }
   return stars;
@@ -128,7 +128,7 @@ export default function StarField() {
                 ? "rgba(255,200,140,0.55)"
                 : "rgba(180,200,235,0.55)",
             filter: "blur(0.5px)",
-            animation: `atlas-drift ${d.duration * 2.2 + 10}s linear infinite`,
+            animation: `atlas-drift ${d.duration * 1.15 + 4.5}s linear infinite`,
             animationDelay: `${d.delay * 1.2}s`,
             ...({
               "--mx": `${52 + (d.id % 11) * 34}px`,
@@ -146,7 +146,7 @@ export default function StarField() {
           position: "absolute",
           inset: 0,
           opacity: 0.18,
-          animation: "atlas-lines-pan 26s ease-in-out infinite",
+          animation: "atlas-lines-pan 14s ease-in-out infinite",
         }}
       >
         <line x1="12%" y1="22%" x2="28%" y2="14%" stroke="rgba(180,200,235,0.7)" strokeWidth="0.4" strokeDasharray="2 4" />
