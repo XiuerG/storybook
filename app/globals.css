@@ -1,0 +1,263 @@
+/* ─── Reset ─────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Root & Typography ──────────────────────────────────── */
+:root {
+  --font-serif: "Cormorant Garamond", "Georgia", serif;
+
+  /* Default page palette: dark / cold pages */
+  --page-bg: #1b1a1d;
+  --page-bg-warm: #1b1a1d;
+  --page-bg-left: #1b1a1d;
+  --page-text: #6b6763;
+  --page-text-muted: #7a6a5a;
+  --page-accent: rgba(180, 130, 90, 0.4);
+
+  /* Screen background */
+  --screen-bg: #524f4f;
+
+  /* Book shadow */
+  --book-shadow:
+    0 50px 100px rgba(0, 0, 0, 0.75),
+    0 25px 50px rgba(0, 0, 0, 0.5);
+
+  /* Outer corners of each page (spine side stays square) */
+  --page-corner-radius: 16px;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background-color: var(--screen-bg);
+  color: var(--page-text);
+  font-family: var(--font-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Book wrapper ────────────────────────────────────────── */
+.book-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+}
+
+/* Ambient warmth behind the book */
+.book-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 55% 45% at 50% 50%,
+    rgba(160, 120, 80, 0.06) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+/* ─── Page base ──────────────────────────────────────────── */
+.page {
+  background-color: var(--page-bg);
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  border-radius: 0 var(--page-corner-radius) var(--page-corner-radius) 0;
+}
+
+/* Left page */
+.page--left {
+  background-color: var(--page-bg-left);
+  border-radius: var(--page-corner-radius) 0 0 var(--page-corner-radius);
+}
+
+/* ─── Calligraphy / cultural healing page override ──────── */
+/* Apply this class to the PageShell for the calligraphy spread */
+.page--calligraphy {
+  --page-bg: #f3e8dc;
+  --page-bg-left: #f3e8dc;
+  --page-text: #3a2f27;
+  --page-text-muted: #8b7a6b;
+  --page-accent: rgba(140, 100, 70, 0.28);
+}
+
+/* Paper feel for calligraphy pages */
+.page--calligraphy.page,
+.page--calligraphy .page {
+  background-color: var(--page-bg);
+  background-image:
+    radial-gradient(
+      ellipse 80% 70% at 50% 50%,
+      rgba(160, 110, 80, 0.06) 0%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 120% 100% at 50% 50%,
+      rgba(255, 255, 255, 0.14) 0%,
+      transparent 78%
+    );
+}
+
+.page--calligraphy.page--left,
+.page--calligraphy .page--left {
+  background-color: var(--page-bg-left);
+  background-image:
+    radial-gradient(
+      ellipse 80% 70% at 50% 50%,
+      rgba(160, 110, 80, 0.06) 0%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 120% 100% at 50% 50%,
+      rgba(255, 255, 255, 0.14) 0%,
+      transparent 78%
+    );
+}
+
+/* ─── Typography ─────────────────────────────────────────── */
+.page-title-spread {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(2rem, 3.2vw, 3rem);
+  line-height: 1.15;
+  color: var(--page-text);
+  letter-spacing: -0.01em;
+  max-width: 18ch;
+}
+
+.page-title {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-style: italic;
+  font-size: clamp(1.4rem, 2.2vw, 1.9rem);
+  line-height: 1.3;
+  color: var(--page-text);
+}
+
+.page-subtitle {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+  color: var(--page-text-muted);
+  letter-spacing: 0.1em;
+}
+
+.page-body {
+  font-family: var(--font-serif);
+  font-weight: 300;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  line-height: 1.9;
+  color: var(--page-text);
+  max-width: 32ch;
+}
+
+.page-number {
+  position: absolute;
+  bottom: 2rem;
+  font-family: var(--font-serif);
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  color: var(--page-text-muted);
+  opacity: 0.35;
+}
+
+.page-number--left {
+  left: 2.5rem;
+}
+
+.page-number--right {
+  right: 2.5rem;
+}
+
+.page-rule {
+  width: 2.5rem;
+  height: 1px;
+  background: var(--page-accent);
+  margin-top: 1.4rem;
+}
+
+/* ─── UndoPage animations ────────────────────────────────── */
+@keyframes undoCodeFloat {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-680px);
+  }
+}
+
+@keyframes undoKeyPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 6px rgba(212, 168, 32, 0.55),
+      0 0 14px rgba(212, 168, 32, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 16px rgba(212, 168, 32, 0.95),
+      0 0 32px rgba(212, 168, 32, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+}
+
+/* ─── Book III — Variety monitor: seamless 한글 danmaku ───── */
+@keyframes book3VarietyDanmakuScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.book3-variety-dm-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  pointer-events: none;
+  height: 1.35em;
+}
+
+.book3-variety-marquee {
+  display: inline-flex;
+  flex-direction: row;
+  width: max-content;
+  will-change: transform;
+  animation: book3VarietyDanmakuScroll var(--book3-dm-duration, 12s) linear infinite;
+  animation-delay: var(--book3-dm-delay, 0s);
+}
+
+.book3-variety-marquee > span {
+  flex: 0 0 auto;
+  padding-right: 2.75rem;
+  white-space: nowrap;
+}
+
+/* ─── Scrollbar (hidden) ─────────────────────────────────── */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Selection ──────────────────────────────────────────── */
+::selection {
+  background: rgba(180, 130, 90, 0.15);
+}
