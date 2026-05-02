@@ -2,6 +2,7 @@
 
 import React, {
   useCallback,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -9,6 +10,7 @@ import React, {
 import { motion, AnimatePresence } from "framer-motion";
 import PageShell from "./PageShell";
 import { InteractionHint } from "./InteractionHint";
+import { useBookOneLiteMode } from "../BookOneLiteContext";
 
 /* ════════════════════════════════════════════════════════════
    CONTENT — title + closing line
@@ -47,6 +49,7 @@ const BLUR_STEP_PER_CLICK = 0.9;   // additive per-click factor; level 5 ≈ 1+0
 const MAX_BLUR_LEVEL      = 5;     // clicks past this don't increase blur further
 const LETTER_FLOW_START   = 2;     // blur level at which scattered letters begin appearing
 const LETTER_COUNT        = 42;    // letters drifting per page at peak intensity
+const LETTER_COUNT_LITE   = 14;    // touch / tablet — same effect, fewer DOM + filter load
 const FOCUS_RADIUS        = 0.30;  // 0–1 fraction of page where the cursor reaches
 const MOUSE_BLUR_GAIN     = 0.5;   // small extra blur near cursor (≤ 1.5× at cursor centre)
 const PARALLAX_X          = 9;
@@ -211,9 +214,6 @@ function buildLetterParticles(side: "left" | "right", count: number): Particle[]
   });
 }
 
-const PARTICLES_L = buildLetterParticles("left", LETTER_COUNT);
-const PARTICLES_R = buildLetterParticles("right", LETTER_COUNT);
-
 /* ════════════════════════════════════════════════════════════
    GLOBAL CLICK STORE
    Both pages share a single click counter so each click on either
@@ -331,6 +331,7 @@ export default HospitalPage;
 ════════════════════════════════════════════════════════════ */
 
 function HospitalBackdrop({ side }: { side: "left" | "right" }) {
+  const lite = useBookOneLiteMode();
   return (
     <>
       <div
@@ -342,7 +343,9 @@ function HospitalBackdrop({ side }: { side: "left" | "right" }) {
           backgroundRepeat: "no-repeat",
           backgroundSize: "200% 100%",
           backgroundPosition: side === "left" ? "left center" : "right center",
-          filter: "brightness(0.55) saturate(0.7) blur(1.4px)",
+          filter: lite
+            ? "brightness(0.55) saturate(0.7)"
+            : "brightness(0.55) saturate(0.7) blur(1.4px)",
           pointerEvents: "none",
         }}
       />
@@ -366,18 +369,31 @@ function HospitalBackdrop({ side }: { side: "left" | "right" }) {
           pointerEvents: "none",
         }}
       />
-      <motion.div
-        aria-hidden="true"
-        animate={{ opacity: [0.55, 0.78, 0.55] }}
-        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(140,180,220,0.10) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }}
-      />
+      {lite ? (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(140,180,220,0.10) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }}
+        />
+      ) : (
+        <motion.div
+          aria-hidden="true"
+          animate={{ opacity: [0.55, 0.78, 0.55] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(140,180,220,0.10) 0%, transparent 70%)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
     </>
   );
 }
@@ -398,50 +414,53 @@ function HospitalRibbonSmoke({
   side: "left" | "right";
   ribbons: Ribbon[];
 }) {
+  const lite = useBookOneLiteMode();
   const filterId = `hospital-ribbon-${side}`;
   return (
     <>
-      <svg
-        width="0"
-        height="0"
-        aria-hidden="true"
-        style={{ position: "absolute", overflow: "hidden" }}
-      >
-        <defs>
-          <filter
-            id={filterId}
-            x="-40%"
-            y="-40%"
-            width="180%"
-            height="180%"
-            colorInterpolationFilters="sRGB"
-          >
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.013"
-              numOctaves="2"
-              seed={side === "left" ? 11 : 19}
-              result="noise"
+      {!lite && (
+        <svg
+          width="0"
+          height="0"
+          aria-hidden="true"
+          style={{ position: "absolute", overflow: "hidden" }}
+        >
+          <defs>
+            <filter
+              id={filterId}
+              x="-40%"
+              y="-40%"
+              width="180%"
+              height="180%"
+              colorInterpolationFilters="sRGB"
             >
-              <animate
-                attributeName="baseFrequency"
-                dur="28s"
-                values="0.010;0.022;0.010"
-                repeatCount="indefinite"
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.013"
+                numOctaves="2"
+                seed={side === "left" ? 11 : 19}
+                result="noise"
+              >
+                <animate
+                  attributeName="baseFrequency"
+                  dur="28s"
+                  values="0.010;0.022;0.010"
+                  repeatCount="indefinite"
+                />
+              </feTurbulence>
+              <feDisplacementMap
+                in="SourceGraphic"
+                in2="noise"
+                scale="62"
+                xChannelSelector="R"
+                yChannelSelector="G"
+                result="warped"
               />
-            </feTurbulence>
-            <feDisplacementMap
-              in="SourceGraphic"
-              in2="noise"
-              scale="62"
-              xChannelSelector="R"
-              yChannelSelector="G"
-              result="warped"
-            />
-            <feGaussianBlur in="warped" stdDeviation="2.6" />
-          </filter>
-        </defs>
-      </svg>
+              <feGaussianBlur in="warped" stdDeviation="2.6" />
+            </filter>
+          </defs>
+        </svg>
+      )}
 
       <div
         aria-hidden="true"
@@ -450,7 +469,7 @@ function HospitalRibbonSmoke({
           inset: 0,
           pointerEvents: "none",
           zIndex: 2,
-          filter: `url(#${filterId})`,
+          ...(lite ? {} : { filter: `url(#${filterId})` }),
         }}
       >
         {ribbons.map((r, i) => {
@@ -552,6 +571,7 @@ function LetterFlow({
   particles: Particle[];
   intensity: number;
 }) {
+  const lite = useBookOneLiteMode();
   const filterId = `hospital-letter-warp-${side}`;
   if (intensity <= 0) {
     // Skip rendering entirely when off — saves the SVG filter cost
@@ -559,45 +579,47 @@ function LetterFlow({
   }
   return (
     <>
-      <svg
-        width="0"
-        height="0"
-        aria-hidden="true"
-        style={{ position: "absolute", overflow: "hidden" }}
-      >
-        <defs>
-          <filter
-            id={filterId}
-            x="-20%"
-            y="-20%"
-            width="140%"
-            height="140%"
-            colorInterpolationFilters="sRGB"
-          >
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.020"
-              numOctaves="2"
-              seed={side === "left" ? 23 : 29}
-              result="noise"
+      {!lite && (
+        <svg
+          width="0"
+          height="0"
+          aria-hidden="true"
+          style={{ position: "absolute", overflow: "hidden" }}
+        >
+          <defs>
+            <filter
+              id={filterId}
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+              colorInterpolationFilters="sRGB"
             >
-              <animate
-                attributeName="baseFrequency"
-                dur="22s"
-                values="0.016;0.026;0.016"
-                repeatCount="indefinite"
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.020"
+                numOctaves="2"
+                seed={side === "left" ? 23 : 29}
+                result="noise"
+              >
+                <animate
+                  attributeName="baseFrequency"
+                  dur="22s"
+                  values="0.016;0.026;0.016"
+                  repeatCount="indefinite"
+                />
+              </feTurbulence>
+              <feDisplacementMap
+                in="SourceGraphic"
+                in2="noise"
+                scale="9"
+                xChannelSelector="R"
+                yChannelSelector="G"
               />
-            </feTurbulence>
-            <feDisplacementMap
-              in="SourceGraphic"
-              in2="noise"
-              scale="9"
-              xChannelSelector="R"
-              yChannelSelector="G"
-            />
-          </filter>
-        </defs>
-      </svg>
+            </filter>
+          </defs>
+        </svg>
+      )}
 
       <div
         aria-hidden="true"
@@ -608,7 +630,7 @@ function LetterFlow({
           zIndex: 4,
           opacity: intensity,
           transition: "opacity 1.6s ease",
-          filter: `url(#${filterId})`,
+          ...(lite ? {} : { filter: `url(#${filterId})` }),
         }}
       >
         {particles.map((p, i) => {
@@ -651,7 +673,7 @@ function LetterFlow({
                     "0 0 10px rgba(180, 210, 240, 0.7), 0 0 26px rgba(150, 185, 225, 0.45)",
                   whiteSpace: "nowrap",
                   letterSpacing: "0.04em",
-                  filter: "blur(0.45px)",
+                  filter: lite ? "none" : "blur(0.45px)",
                 }}
               >
                 {p.char}
@@ -878,6 +900,13 @@ function HospitalPageLeft({
   const interaction = useHospitalInteraction();
   const { mouse } = interaction;
   const { accumulatedBlur, darkness, letterFlowIntensity } = useHospitalState();
+  const lite = useBookOneLiteMode();
+  const particles = useMemo(
+    () =>
+      buildLetterParticles("left", lite ? LETTER_COUNT_LITE : LETTER_COUNT),
+    [lite],
+  );
+  const ribbons = lite ? RIBBONS_L.slice(0, 2) : RIBBONS_L;
 
   const parallaxX = (mouse.x - 0.5) * -PARALLAX_X;
   const parallaxY = (mouse.y - 0.5) * -PARALLAX_Y;
@@ -890,7 +919,7 @@ function HospitalPageLeft({
       style={{ background: "#070a12" }}
     >
       <HospitalBackdrop side="left" />
-      <HospitalRibbonSmoke side="left" ribbons={RIBBONS_L} />
+      <HospitalRibbonSmoke side="left" ribbons={ribbons} />
       <DarknessOverlay darkness={darkness} />
 
       <InteractionLayer {...interaction} />
@@ -932,7 +961,7 @@ function HospitalPageLeft({
 
       <LetterFlow
         side="left"
-        particles={PARTICLES_L}
+        particles={particles}
         intensity={letterFlowIntensity}
       />
 
@@ -1016,6 +1045,13 @@ function HospitalPageRight({
   const interaction = useHospitalInteraction();
   const { mouse } = interaction;
   const { accumulatedBlur, darkness, letterFlowIntensity } = useHospitalState();
+  const lite = useBookOneLiteMode();
+  const particles = useMemo(
+    () =>
+      buildLetterParticles("right", lite ? LETTER_COUNT_LITE : LETTER_COUNT),
+    [lite],
+  );
+  const ribbons = lite ? RIBBONS_R.slice(0, 2) : RIBBONS_R;
 
   const parallaxX = (mouse.x - 0.5) * -PARALLAX_X;
   const parallaxY = (mouse.y - 0.5) * -PARALLAX_Y;
@@ -1028,7 +1064,7 @@ function HospitalPageRight({
       style={{ background: "#070a12" }}
     >
       <HospitalBackdrop side="right" />
-      <HospitalRibbonSmoke side="right" ribbons={RIBBONS_R} />
+      <HospitalRibbonSmoke side="right" ribbons={ribbons} />
       <DarknessOverlay darkness={darkness} />
 
       <InteractionLayer {...interaction} />
@@ -1058,7 +1094,7 @@ function HospitalPageRight({
 
       <LetterFlow
         side="right"
-        particles={PARTICLES_R}
+        particles={particles}
         intensity={letterFlowIntensity}
       />
 
