@@ -11,7 +11,7 @@ import PageShell from "./PageShell";
 ════════════════════════════════════════════════════════════ */
 
 const TITLE = "Our Secret Haven";
-const SUB = "Immigrant stories of food, memory, and shelter";
+const SUB = "Chinese rituals of food, memory, and home";
 const TAGLINE = "Where the door still knows your hand.";
 /** Cover art transparency (0–1). Lower = more fade into base layer. */
 const COVER_PHOTO_OPACITY = 0.88;

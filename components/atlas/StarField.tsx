@@ -5,6 +5,8 @@ import React, { useMemo } from "react";
 /* ════════════════════════════════════════════════════════════
    STARFIELD — twinkling stars that flow / drift across the sky
    (oscillating translations + distant drifting motes).
+   Keyframes live in globals.css; inline styles use fixed strings
+   + longhand animation props so SSR/CSR markup matches (hydration).
 ================================================================ */
 
 type Star = {
@@ -46,6 +48,14 @@ function generateStars(count: number, seed = 1): Star[] {
   return stars;
 }
 
+/** Stable string formatting for identical server/client style attributes */
+function pct4(n: number): string {
+  return `${n.toFixed(4)}%`;
+}
+function px3(n: number): string {
+  return `${n.toFixed(3)}px`;
+}
+
 export default function StarField() {
   const stars = useMemo(() => generateStars(140, 7), []);
   const drift = useMemo(() => generateStars(28, 99), []);
@@ -80,15 +90,21 @@ export default function StarField() {
           key={s.id}
           style={{
             position: "absolute",
-            left: `${s.x}%`,
-            top: `${s.y}%`,
-            width: s.size,
-            height: s.size,
-            animation: `atlas-star-flow ${s.flowDur}s ease-in-out infinite alternate`,
-            animationDelay: `${s.delay * 0.08}s`,
+            left: pct4(s.x),
+            top: pct4(s.y),
+            width: px3(s.size),
+            height: px3(s.size),
+            animationName: "atlas-star-flow",
+            animationDuration: `${s.flowDur.toFixed(4)}s`,
+            animationTimingFunction: "ease-in-out",
+            animationIterationCount: "infinite",
+            animationDirection: "alternate",
+            animationFillMode: "none",
+            animationPlayState: "running",
+            animationDelay: `${(s.delay * 0.08).toFixed(4)}s`,
             ...({
-              "--fx": `${s.flowDx}px`,
-              "--fy": `${s.flowDy}px`,
+              "--fx": px3(s.flowDx),
+              "--fy": px3(s.flowDy),
             } as React.CSSProperties),
           }}
         >
@@ -105,8 +121,13 @@ export default function StarField() {
                 s.hue === "warm"
                   ? "0 0 4px rgba(255,180,110,0.6)"
                   : "0 0 3px rgba(200,210,240,0.5)",
-              animation: `atlas-twinkle ${s.duration}s ease-in-out infinite`,
-              animationDelay: `${s.delay}s`,
+              animationName: "atlas-twinkle",
+              animationDuration: `${s.duration.toFixed(4)}s`,
+              animationTimingFunction: "ease-in-out",
+              animationIterationCount: "infinite",
+              animationFillMode: "none",
+              animationPlayState: "running",
+              animationDelay: `${s.delay.toFixed(4)}s`,
             }}
           />
         </div>
@@ -118,18 +139,23 @@ export default function StarField() {
           key={`drift-${d.id}`}
           style={{
             position: "absolute",
-            left: `${d.x}%`,
-            top: `${d.y}%`,
-            width: d.size * 1.6,
-            height: d.size * 1.6,
+            left: pct4(d.x),
+            top: pct4(d.y),
+            width: px3(d.size * 1.6),
+            height: px3(d.size * 1.6),
             borderRadius: "50%",
             background:
               d.hue === "warm"
                 ? "rgba(255,200,140,0.55)"
                 : "rgba(180,200,235,0.55)",
             filter: "blur(0.5px)",
-            animation: `atlas-drift ${d.duration * 1.15 + 4.5}s linear infinite`,
-            animationDelay: `${d.delay * 1.2}s`,
+            animationName: "atlas-drift",
+            animationDuration: `${(d.duration * 1.15 + 4.5).toFixed(4)}s`,
+            animationTimingFunction: "linear",
+            animationIterationCount: "infinite",
+            animationFillMode: "none",
+            animationPlayState: "running",
+            animationDelay: `${(d.delay * 1.2).toFixed(4)}s`,
             ...({
               "--mx": `${52 + (d.id % 11) * 34}px`,
               "--my": `${-(48 + (d.id % 9) * 38)}px`,
@@ -146,7 +172,12 @@ export default function StarField() {
           position: "absolute",
           inset: 0,
           opacity: 0.18,
-          animation: "atlas-lines-pan 14s ease-in-out infinite",
+          animationName: "atlas-lines-pan",
+          animationDuration: "14s",
+          animationTimingFunction: "ease-in-out",
+          animationIterationCount: "infinite",
+          animationFillMode: "none",
+          animationPlayState: "running",
         }}
       >
         <line x1="12%" y1="22%" x2="28%" y2="14%" stroke="rgba(180,200,235,0.7)" strokeWidth="0.4" strokeDasharray="2 4" />
@@ -154,55 +185,6 @@ export default function StarField() {
         <line x1="68%" y1="78%" x2="84%" y2="84%" stroke="rgba(255,200,140,0.6)" strokeWidth="0.4" strokeDasharray="2 4" />
         <line x1="20%" y1="80%" x2="36%" y2="86%" stroke="rgba(180,200,235,0.6)" strokeWidth="0.4" strokeDasharray="2 4" />
       </svg>
-
-      <style jsx global>{`
-        @keyframes atlas-twinkle {
-          0%,
-          100% {
-            opacity: 0.18;
-            transform: scale(0.85);
-          }
-          50% {
-            opacity: 0.85;
-            transform: scale(1.05);
-          }
-        }
-        @keyframes atlas-star-flow {
-          0% {
-            transform: translate(-50%, -50%) translate(0, 0);
-          }
-          100% {
-            transform: translate(-50%, -50%) translate(var(--fx), var(--fy));
-          }
-        }
-        @keyframes atlas-drift {
-          0% {
-            transform: translate(-50%, -50%) translate(-22%, 18%);
-            opacity: 0;
-          }
-          10% {
-            opacity: 0.72;
-          }
-          90% {
-            opacity: 0.48;
-          }
-          100% {
-            transform: translate(-50%, -50%) translate(var(--mx), var(--my));
-            opacity: 0;
-          }
-        }
-        @keyframes atlas-lines-pan {
-          0% {
-            transform: translate(0, 0);
-          }
-          50% {
-            transform: translate(-3.2%, 2.2%);
-          }
-          100% {
-            transform: translate(0, 0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

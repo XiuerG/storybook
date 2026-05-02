@@ -261,3 +261,54 @@ body {
 ::selection {
   background: rgba(180, 130, 90, 0.15);
 }
+
+/* ─── Atlas home starfield (global keyframes; StarField uses longhand styles for hydration) */
+@keyframes atlas-twinkle {
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes atlas-star-flow {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0);
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--fx), var(--fy));
+  }
+}
+
+@keyframes atlas-drift {
+  0% {
+    transform: translate(-50%, -50%) translate(-22%, 18%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.72;
+  }
+  90% {
+    opacity: 0.48;
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--mx), var(--my));
+    opacity: 0;
+  }
+}
+
+@keyframes atlas-lines-pan {
+  0% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-3.2%, 2.2%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
