@@ -4,9 +4,9 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageShell from "@/components/book-one/pages/PageShell";
 import { InteractionHint } from "@/components/book-one/pages/InteractionHint";
-import kdramaScene from "../assets/kdrama-scene.png";
-import youtubeScene from "../assets/youtube-scene.png";
-import varietyScene from "../assets/variety-scene.png";
+import kdramaScene from "../assets/kdrama-scene.webp";
+import youtubeScene from "../assets/youtube-scene.webp";
+import varietyScene from "../assets/variety-scene.webp";
 
 /* ════════════════════════════════════════════════════════════
    PAGE 2 —The Language That Stayed

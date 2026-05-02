@@ -14,17 +14,17 @@ import { InteractionHint } from "@/components/book-one/pages/InteractionHint";
    so the spread reads as one continuous space.
 
    Each click position sits on the table surface and reveals a
-   dish or offering. Stickers are transparent PNGs under /public/book-two/
+   dish or offering.    Stickers are transparent WebPs under /public/book-two/
    (checker / bright neutral keyed out at build time).
 
    ─ Dish artwork (see scripts/process-tet-meal-dishes.py) ─
-     tet-dish-nem-xoi.png   nem rán + xôi gấc
-     tet-dish-chicken.png   whole chicken
-     tet-dish-bitter-melon.png  canh khổ qua
-     tet-dish-banh.png      bánh chưng / bánh tét
-     tet-dish-pickles.png   dưa món
-     tet-dish-cha-lua.png   chả lụa
-     tet-incense.png        incense burner (scripts/process-tet-assets.py)
+     tet-dish-nem-xoi.webp   nem rán + xôi gấc
+     tet-dish-chicken.webp   whole chicken
+     tet-dish-bitter-melon.webp  canh khổ qua
+     tet-dish-banh.webp      bánh chưng / bánh tét
+     tet-dish-pickles.webp   dưa món
+     tet-dish-cha-lua.webp   chả lụa
+     tet-incense.webp        incense burner (scripts/process-tet-assets.py)
 ================================================================ */
 
 const TITLE = "The Tết Table";
@@ -35,15 +35,15 @@ const NARR_BOT_2 = "The floor we sat on.\nThe year beginning again.";
 const HINT = "Click to set the table";
 
 /* Asset paths */
-const SCENE_SRC = "/book-two/tet-scene.png";
+const SCENE_SRC = "/book-two/tet-scene.webp";
 
-const DISH_NEM_XOI = "/book-two/tet-dish-nem-xoi.png";
-const DISH_CHICKEN = "/book-two/tet-dish-chicken.png";
-const DISH_BITTER_MELON = "/book-two/tet-dish-bitter-melon.png";
-const DISH_BANH = "/book-two/tet-dish-banh.png";
-const DISH_PICKLES = "/book-two/tet-dish-pickles.png";
-const DISH_CHA_LUA = "/book-two/tet-dish-cha-lua.png";
-const DISH_INCENSE = "/book-two/tet-incense.png";
+const DISH_NEM_XOI = "/book-two/tet-dish-nem-xoi.webp";
+const DISH_CHICKEN = "/book-two/tet-dish-chicken.webp";
+const DISH_BITTER_MELON = "/book-two/tet-dish-bitter-melon.webp";
+const DISH_BANH = "/book-two/tet-dish-banh.webp";
+const DISH_PICKLES = "/book-two/tet-dish-pickles.webp";
+const DISH_CHA_LUA = "/book-two/tet-dish-cha-lua.webp";
+const DISH_INCENSE = "/book-two/tet-incense.webp";
 
 const TOTAL_DISHES = 7;
 

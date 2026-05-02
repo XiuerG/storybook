@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageShell from "@/components/book-one/pages/PageShell";
 import { InteractionHint } from "@/components/book-one/pages/InteractionHint";
-import resetBowlSoup from "../assets/reset-bowl-soup.png";
+import resetBowlSoup from "../assets/reset-bowl-soup.webp";
 
 /* ════════════════════════════════════════════════════════════
    PAGE 3 — THE RESET BOWL

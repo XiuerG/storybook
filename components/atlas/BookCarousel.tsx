@@ -27,14 +27,14 @@ const ATLAS_CAROUSEL_COVERS: Record<
 > = {
   "book-one": {
     base: "#1e1b18",
-    image: "/cover-background.png?v=4",
+    image: "/cover-background.webp?v=4",
     photoOpacity: 0.88,
     glaze:
       "linear-gradient(to top, rgba(12,8,6,0.72) 0%, rgba(12,8,6,0.35) 28%, transparent 52%)",
   },
   "book-two": {
     base: "#151015",
-    image: "/book-two-cover-bg.png?v=1",
+    image: "/book-two-cover-bg.webp?v=1",
     photoOpacity: 0.56,
     glaze:
       "radial-gradient(ellipse 90% 60% at 50% 75%, rgba(60,28,18,0.4) 0%, transparent 72%)," +
@@ -43,7 +43,7 @@ const ATLAS_CAROUSEL_COVERS: Record<
   },
   "book-three": {
     base: "#0f0d16",
-    image: "/book-three-cover-bg.png?v=1",
+    image: "/book-three-cover-bg.webp?v=1",
     photoOpacity: 0.54,
     glaze:
       "radial-gradient(ellipse 90% 50% at 50% 82%, rgba(70,30,28,0.34) 0%, transparent 72%)," +
@@ -52,7 +52,7 @@ const ATLAS_CAROUSEL_COVERS: Record<
   },
   "book-four": {
     base: "#0d0a18",
-    image: "/book-four-cover-bg.png?v=1",
+    image: "/book-four-cover-bg.webp?v=1",
     photoOpacity: 0.54,
     glaze:
       "radial-gradient(ellipse 90% 50% at 50% 78%, rgba(255,120,50,0.28) 0%, transparent 72%)," +

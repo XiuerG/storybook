@@ -28,8 +28,8 @@ const NARR_R_BOT_2 = "But they remind me\nthat I have lived through something be
 const HINT = "Click a memory to open it";
 
 /** Real assets under /public/book-two/ */
-const MEMORY_SCHOOL_SRC = "/book-two/memory-school.png";
-const MEMORY_WALLPAPER_SRC = "/book-two/memory-wallpaper.png";
+const MEMORY_SCHOOL_SRC = "/book-two/memory-school.webp";
+const MEMORY_WALLPAPER_SRC = "/book-two/memory-wallpaper.webp";
 
 /* ════════════════════════════════════════════════════════════
    CARD DEFINITIONS

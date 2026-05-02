@@ -50,7 +50,7 @@ const CoverPage = React.forwardRef<HTMLDivElement>((_, ref) => {
         style={{
           position: "absolute",
           inset: "-3rem -2.5rem -3rem -3rem",
-          backgroundImage: "url(/cover-background.png?v=4)",
+          backgroundImage: "url(/cover-background.webp?v=4)",
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",

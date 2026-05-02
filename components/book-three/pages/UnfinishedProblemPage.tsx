@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageShell from "@/components/book-one/pages/PageShell";
 import { InteractionHint } from "@/components/book-one/pages/InteractionHint";
-import deskScene from "../assets/desk-scene.png";
+import deskScene from "../assets/desk-scene.webp";
 
 /* ════════════════════════════════════════════════════════════
    PAGE 1 — THE UNFINISHED PROBLEM

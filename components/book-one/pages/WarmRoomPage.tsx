@@ -188,7 +188,7 @@ function FoodRelic({ lit, onLight }: { lit: boolean; onLight: () => void }) {
       >
         <div style={{
           width: "100%", height: "100%",
-          backgroundImage: "url(/pantry_real.png)",
+          backgroundImage: "url(/pantry_real.webp)",
           backgroundSize: "220% auto",
           backgroundPosition: "30% 60%",
           filter: lit ? "none" : "saturate(0.15) brightness(0.45)",

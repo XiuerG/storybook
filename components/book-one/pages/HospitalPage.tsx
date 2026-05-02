@@ -338,7 +338,7 @@ function HospitalBackdrop({ side }: { side: "left" | "right" }) {
         style={{
           position: "absolute",
           inset: 0,
-          backgroundImage: "url(/hospital_bg.png)",
+          backgroundImage: "url(/hospital_bg.webp)",
           backgroundRepeat: "no-repeat",
           backgroundSize: "200% 100%",
           backgroundPosition: side === "left" ? "left center" : "right center",

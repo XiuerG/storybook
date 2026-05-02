@@ -52,7 +52,7 @@ function PantryBackdrop({ side }: { side: "left" | "right" }) {
     <>
       <div aria-hidden="true" style={{
         position: "absolute", inset: 0,
-        backgroundImage: "url(/pantry_real.png)",
+        backgroundImage: "url(/pantry_real.webp)",
         backgroundRepeat: "no-repeat",
         backgroundSize: "200% auto",
         backgroundPosition: side === "left" ? "left center" : "right center",
@@ -83,7 +83,7 @@ function FullReveal({ side, visible }: { side: "left" | "right"; visible: boolea
       transition={{ duration: 1.6, ease: [0.22, 0.61, 0.36, 1] }}
       style={{
         position: "absolute", inset: 0,
-        backgroundImage: "url(/pantry_real.png)",
+        backgroundImage: "url(/pantry_real.webp)",
         backgroundRepeat: "no-repeat",
         backgroundSize: "200% auto",
         backgroundPosition: side === "left" ? "left center" : "right center",

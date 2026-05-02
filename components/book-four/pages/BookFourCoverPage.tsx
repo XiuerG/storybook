@@ -53,7 +53,7 @@ const BookFourCoverPage = React.forwardRef<HTMLDivElement>((_, ref) => (
         position: "absolute",
         inset: "-3rem -2.5rem -3rem -3rem",
         zIndex: 0,
-        backgroundImage: "url(/book-four-cover-bg.png?v=1)",
+        backgroundImage: "url(/book-four-cover-bg.webp?v=1)",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
