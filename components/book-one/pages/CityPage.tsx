@@ -3,7 +3,6 @@
 import React, { useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import PageShell from "./PageShell";
-import { useBookOneLiteMode } from "../BookOneLiteContext";
 
 // ════════════════════════════════════════════════════════════
 //  TEXT CONTENT
@@ -83,12 +82,6 @@ const LANES = [
   { yPct: 73, h: 8,  dir: "left"  as const, speed: 11, count: 2, blur: 3.0 },
 ];
 
-/** Touch / tablet: fewer cars, softer blur — same look, less GPU per frame */
-const LANES_LITE: (typeof LANES)[number][] = [
-  { yPct: 62, h: 12, dir: "right" as const, speed: 10, count: 1, blur: 1 },
-  { yPct: 72, h: 9, dir: "left" as const, speed: 15, count: 1, blur: 1.1 },
-];
-
 // ════════════════════════════════════════════════════════════
 //  BUILDING SILHOUETTES
 //
@@ -142,8 +135,6 @@ function CityPageLeft({
 }: {
   forwardedRef: React.ForwardedRef<HTMLDivElement>;
 }) {
-  const lite = useBookOneLiteMode();
-  const lanes = lite ? LANES_LITE : LANES;
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -209,13 +200,13 @@ function CityPageLeft({
 
         {/* Traffic — shallow parallax */}
         <div style={px(2)}>
-          {lanes.map((lane, i) => (
+          {LANES.map((lane, i) => (
             <TrafficLane key={i} {...lane} />
           ))}
         </div>
 
         {/* Atmosphere */}
-        <AtmosphereLayer lite={lite} />
+        <AtmosphereLayer />
 
         {/* Narrative sentence — centred in the open sky */}
         <div style={{
@@ -264,8 +255,6 @@ function CityPageRight({
 }: {
   forwardedRef: React.ForwardedRef<HTMLDivElement>;
 }) {
-  const lite = useBookOneLiteMode();
-  const lanes = lite ? LANES_LITE : LANES;
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -331,13 +320,13 @@ function CityPageRight({
 
         {/* Traffic — depth 2 */}
         <div style={px(2)}>
-          {lanes.map((lane, i) => (
+          {LANES.map((lane, i) => (
             <TrafficLane key={i} {...lane} />
           ))}
         </div>
 
         {/* Atmosphere */}
-        <AtmosphereLayer lite={lite} />
+        <AtmosphereLayer />
 
         {/* Poetic line — right side of page */}
         <div style={{
@@ -478,10 +467,8 @@ function MovingCar({
   opacity: number;
   delay: number;
 }) {
-  const lite = useBookOneLiteMode();
   const SWEEP   = 560;
   const isRight = dir === "right";
-  const blurPx = lite ? Math.min(blur, 1.15) : blur;
 
   const gradient = isRight
     ? `linear-gradient(to right,
@@ -512,7 +499,7 @@ function MovingCar({
         width,
         height: "100%",
         background: gradient,
-        filter: `blur(${blurPx}px)`,
+        filter: `blur(${blur}px)`,
         opacity,
       }}
     />
@@ -676,30 +663,24 @@ function Bridge({ side }: { side: "left" | "right" }) {
  * 3. Cold blue tint at sky top.
  * 4. Faint horizon bloom.
  */
-function AtmosphereLayer({ lite }: { lite: boolean }) {
-  const fogStyle: React.CSSProperties = {
-    position: "absolute",
-    inset: "-6%",
-    background: `
+function AtmosphereLayer() {
+  return (
+    <>
+      {/* 1. Drifting fog */}
+      <motion.div
+        aria-hidden="true"
+        animate={{ x: ["0%", "5%", "0%"] }}
+        transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          inset: "-6%",
+          background: `
             radial-gradient(ellipse 100% 22% at 38% 74%, ${C.fog} 0%, transparent 72%),
             radial-gradient(ellipse  80% 18% at 80% 80%, ${C.fog} 0%, transparent 65%)
           `,
-    pointerEvents: "none",
-  };
-
-  return (
-    <>
-      {/* 1. Drifting fog — static on touch to avoid perpetual layout work */}
-      {lite ? (
-        <div aria-hidden="true" style={fogStyle} />
-      ) : (
-        <motion.div
-          aria-hidden="true"
-          animate={{ x: ["0%", "5%", "0%"] }}
-          transition={{ duration: 22, repeat: Infinity, ease: "easeInOut" }}
-          style={fogStyle}
-        />
-      )}
+          pointerEvents: "none",
+        }}
+      />
 
       {/* 2. Edge vignette */}
       <div aria-hidden="true" style={{

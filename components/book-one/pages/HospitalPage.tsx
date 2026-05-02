@@ -2,7 +2,6 @@
 
 import React, {
   useCallback,
-  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -10,7 +9,6 @@ import React, {
 import { motion, AnimatePresence } from "framer-motion";
 import PageShell from "./PageShell";
 import { InteractionHint } from "./InteractionHint";
-import { useBookOneLiteMode } from "../BookOneLiteContext";
 
 /* ════════════════════════════════════════════════════════════
    CONTENT — title + closing line
@@ -49,7 +47,6 @@ const BLUR_STEP_PER_CLICK = 0.9;   // additive per-click factor; level 5 ≈ 1+0
 const MAX_BLUR_LEVEL      = 5;     // clicks past this don't increase blur further
 const LETTER_FLOW_START   = 2;     // blur level at which scattered letters begin appearing
 const LETTER_COUNT        = 42;    // letters drifting per page at peak intensity
-const LETTER_COUNT_LITE   = 14;    // touch / tablet — same effect, fewer DOM + filter load
 const FOCUS_RADIUS        = 0.30;  // 0–1 fraction of page where the cursor reaches
 const MOUSE_BLUR_GAIN     = 0.5;   // small extra blur near cursor (≤ 1.5× at cursor centre)
 const PARALLAX_X          = 9;
@@ -118,45 +115,6 @@ const FRAGS_R: Frag[] = [
 ];
 
 /* ════════════════════════════════════════════════════════════
-   SMOKE RIBBONS — long curving bezier ribbons that drift across
-   the page and get warped organically by an SVG turbulence filter.
-
-   Each ribbon:
-     yPct        — vertical anchor (0–100) of the ribbon's centerline
-     pathD       — SVG path expressed in a 800×200 local viewBox
-                   (M starts at left edge, ends at x=800; midpoint
-                    around y≈100 for the centerline)
-     thickness   — stroke width in viewBox units (≈ pixels)
-     duration    — seconds for one full left-to-right pass
-     delay       — initial offset so ribbons don't all start together
-     opacity     — peak alpha of the ribbon
-     bob         — px of vertical sway during a pass
-════════════════════════════════════════════════════════════ */
-type Ribbon = {
-  yPct: number;
-  pathD: string;
-  thickness: number;
-  duration: number;
-  delay: number;
-  opacity: number;
-  bob: number;
-};
-
-const RIBBONS_L: Ribbon[] = [
-  { yPct: 22, pathD: "M 0 100 C 200 60, 400 140, 800 100",                              thickness: 14, duration: 40, delay: 0,  opacity: 0.55, bob: 12 },
-  { yPct: 50, pathD: "M 0 100 C 180 40,  360 160, 540 90  S 720 130, 800 110",          thickness: 10, duration: 48, delay: 8,  opacity: 0.45, bob: 18 },
-  { yPct: 78, pathD: "M 0 100 C 220 130, 420 70, 800 110",                              thickness: 16, duration: 56, delay: 18, opacity: 0.50, bob: 10 },
-  { yPct: 12, pathD: "M 0 100 C 160 80, 320 120, 480 90  S 720 110, 800 95",            thickness: 7,  duration: 44, delay: 28, opacity: 0.35, bob: 14 },
-];
-
-const RIBBONS_R: Ribbon[] = [
-  { yPct: 18, pathD: "M 0 100 C 200 130, 400 70, 800 100",                              thickness: 12, duration: 46, delay: 4,  opacity: 0.50, bob: 14 },
-  { yPct: 44, pathD: "M 0 100 C 160 50,  340 150, 520 80  S 720 130, 800 105",          thickness: 16, duration: 52, delay: 14, opacity: 0.55, bob: 16 },
-  { yPct: 70, pathD: "M 0 100 C 200 90, 400 130, 800 95",                               thickness: 9,  duration: 38, delay: 22, opacity: 0.40, bob: 12 },
-  { yPct: 32, pathD: "M 0 100 C 140 110, 320 80, 480 105 S 720 80, 800 100",            thickness: 7,  duration: 58, delay: 32, opacity: 0.32, bob: 18 },
-];
-
-/* ════════════════════════════════════════════════════════════
    LETTER POOL — particles for the LetterFlow swarm
    Built from the actual bureaucratic phrases so the eye briefly
    recognises fragments of them as they drift away.
@@ -213,6 +171,9 @@ function buildLetterParticles(side: "left" | "right", count: number): Particle[]
     };
   });
 }
+
+const PARTICLES_L = buildLetterParticles("left", LETTER_COUNT);
+const PARTICLES_R = buildLetterParticles("right", LETTER_COUNT);
 
 /* ════════════════════════════════════════════════════════════
    GLOBAL CLICK STORE
@@ -331,7 +292,6 @@ export default HospitalPage;
 ════════════════════════════════════════════════════════════ */
 
 function HospitalBackdrop({ side }: { side: "left" | "right" }) {
-  const lite = useBookOneLiteMode();
   return (
     <>
       <div
@@ -343,9 +303,7 @@ function HospitalBackdrop({ side }: { side: "left" | "right" }) {
           backgroundRepeat: "no-repeat",
           backgroundSize: "200% 100%",
           backgroundPosition: side === "left" ? "left center" : "right center",
-          filter: lite
-            ? "brightness(0.55) saturate(0.7)"
-            : "brightness(0.55) saturate(0.7) blur(1.4px)",
+          filter: "brightness(0.55) saturate(0.7) blur(1.4px)",
           pointerEvents: "none",
         }}
       />
@@ -369,186 +327,18 @@ function HospitalBackdrop({ side }: { side: "left" | "right" }) {
           pointerEvents: "none",
         }}
       />
-      {lite ? (
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(140,180,220,0.10) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
-      ) : (
-        <motion.div
-          aria-hidden="true"
-          animate={{ opacity: [0.55, 0.78, 0.55] }}
-          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(140,180,220,0.10) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
-      )}
-    </>
-  );
-}
-
-/**
- * HospitalRibbonSmoke — long curving SVG ribbons that drift left → right
- * across the page and get warped continuously by feTurbulence +
- * feDisplacementMap so they curl, billow, and re-shape like real smoke.
- * A heavy gaussian blur softens the edges into volumetric mist.
- *
- * Sits between the photo backdrop (z=0..1) and the floating text (z=4),
- * so smoke softly obscures the chaos beneath the words.
- */
-function HospitalRibbonSmoke({
-  side,
-  ribbons,
-}: {
-  side: "left" | "right";
-  ribbons: Ribbon[];
-}) {
-  const lite = useBookOneLiteMode();
-  const filterId = `hospital-ribbon-${side}`;
-  return (
-    <>
-      {!lite && (
-        <svg
-          width="0"
-          height="0"
-          aria-hidden="true"
-          style={{ position: "absolute", overflow: "hidden" }}
-        >
-          <defs>
-            <filter
-              id={filterId}
-              x="-40%"
-              y="-40%"
-              width="180%"
-              height="180%"
-              colorInterpolationFilters="sRGB"
-            >
-              <feTurbulence
-                type="fractalNoise"
-                baseFrequency="0.013"
-                numOctaves="2"
-                seed={side === "left" ? 11 : 19}
-                result="noise"
-              >
-                <animate
-                  attributeName="baseFrequency"
-                  dur="28s"
-                  values="0.010;0.022;0.010"
-                  repeatCount="indefinite"
-                />
-              </feTurbulence>
-              <feDisplacementMap
-                in="SourceGraphic"
-                in2="noise"
-                scale="62"
-                xChannelSelector="R"
-                yChannelSelector="G"
-                result="warped"
-              />
-              <feGaussianBlur in="warped" stdDeviation="2.6" />
-            </filter>
-          </defs>
-        </svg>
-      )}
-
-      <div
+      <motion.div
         aria-hidden="true"
+        animate={{ opacity: [0.55, 0.78, 0.55] }}
+        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
         style={{
           position: "absolute",
           inset: 0,
+          background:
+            "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(140,180,220,0.10) 0%, transparent 70%)",
           pointerEvents: "none",
-          zIndex: 2,
-          ...(lite ? {} : { filter: `url(#${filterId})` }),
         }}
-      >
-        {ribbons.map((r, i) => {
-          // Each ribbon is rendered in its own 800×200 SVG that drifts
-          // from off-page-left to off-page-right.
-          const ribbonW = 800;
-          const ribbonH = 200;
-          const startX = -ribbonW + 40;
-          const endX = 480 + 40;
-          const baseY = (r.yPct / 100) * 660 - ribbonH / 2;
-          return (
-            <motion.div
-              key={i}
-              initial={{ x: startX, y: baseY }}
-              animate={{
-                x: endX,
-                y: [baseY, baseY + r.bob, baseY - r.bob, baseY],
-              }}
-              transition={{
-                x: {
-                  duration: r.duration,
-                  repeat: Infinity,
-                  ease: "linear",
-                  delay: -r.delay,
-                },
-                y: {
-                  duration: r.duration * 0.7,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: -r.delay,
-                },
-              }}
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                width: ribbonW,
-                height: ribbonH,
-                opacity: r.opacity,
-                mixBlendMode: "screen",
-              }}
-            >
-              <svg
-                width={ribbonW}
-                height={ribbonH}
-                viewBox={`0 0 ${ribbonW} ${ribbonH}`}
-                style={{ overflow: "visible" }}
-              >
-                {/* Outer halo — wider, lower-alpha, big blur */}
-                <path
-                  d={r.pathD}
-                  stroke="rgba(220, 235, 255, 0.45)"
-                  strokeWidth={r.thickness * 2.2}
-                  strokeLinecap="round"
-                  fill="none"
-                  filter="blur(8px)"
-                />
-                {/* Mid body */}
-                <path
-                  d={r.pathD}
-                  stroke="rgba(225, 240, 255, 0.65)"
-                  strokeWidth={r.thickness * 1.3}
-                  strokeLinecap="round"
-                  fill="none"
-                  opacity="0.85"
-                />
-                {/* Bright core */}
-                <path
-                  d={r.pathD}
-                  stroke="rgba(245, 250, 255, 0.85)"
-                  strokeWidth={r.thickness * 0.6}
-                  strokeLinecap="round"
-                  fill="none"
-                />
-              </svg>
-            </motion.div>
-          );
-        })}
-      </div>
+      />
     </>
   );
 }
@@ -571,7 +361,6 @@ function LetterFlow({
   particles: Particle[];
   intensity: number;
 }) {
-  const lite = useBookOneLiteMode();
   const filterId = `hospital-letter-warp-${side}`;
   if (intensity <= 0) {
     // Skip rendering entirely when off — saves the SVG filter cost
@@ -579,47 +368,45 @@ function LetterFlow({
   }
   return (
     <>
-      {!lite && (
-        <svg
-          width="0"
-          height="0"
-          aria-hidden="true"
-          style={{ position: "absolute", overflow: "hidden" }}
-        >
-          <defs>
-            <filter
-              id={filterId}
-              x="-20%"
-              y="-20%"
-              width="140%"
-              height="140%"
-              colorInterpolationFilters="sRGB"
+      <svg
+        width="0"
+        height="0"
+        aria-hidden="true"
+        style={{ position: "absolute", overflow: "hidden" }}
+      >
+        <defs>
+          <filter
+            id={filterId}
+            x="-20%"
+            y="-20%"
+            width="140%"
+            height="140%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.020"
+              numOctaves="2"
+              seed={side === "left" ? 23 : 29}
+              result="noise"
             >
-              <feTurbulence
-                type="fractalNoise"
-                baseFrequency="0.020"
-                numOctaves="2"
-                seed={side === "left" ? 23 : 29}
-                result="noise"
-              >
-                <animate
-                  attributeName="baseFrequency"
-                  dur="22s"
-                  values="0.016;0.026;0.016"
-                  repeatCount="indefinite"
-                />
-              </feTurbulence>
-              <feDisplacementMap
-                in="SourceGraphic"
-                in2="noise"
-                scale="9"
-                xChannelSelector="R"
-                yChannelSelector="G"
+              <animate
+                attributeName="baseFrequency"
+                dur="22s"
+                values="0.016;0.026;0.016"
+                repeatCount="indefinite"
               />
-            </filter>
-          </defs>
-        </svg>
-      )}
+            </feTurbulence>
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="noise"
+              scale="9"
+              xChannelSelector="R"
+              yChannelSelector="G"
+            />
+          </filter>
+        </defs>
+      </svg>
 
       <div
         aria-hidden="true"
@@ -630,7 +417,7 @@ function LetterFlow({
           zIndex: 4,
           opacity: intensity,
           transition: "opacity 1.6s ease",
-          ...(lite ? {} : { filter: `url(#${filterId})` }),
+          filter: `url(#${filterId})`,
         }}
       >
         {particles.map((p, i) => {
@@ -673,7 +460,7 @@ function LetterFlow({
                     "0 0 10px rgba(180, 210, 240, 0.7), 0 0 26px rgba(150, 185, 225, 0.45)",
                   whiteSpace: "nowrap",
                   letterSpacing: "0.04em",
-                  filter: lite ? "none" : "blur(0.45px)",
+                  filter: "blur(0.45px)",
                 }}
               >
                 {p.char}
@@ -900,13 +687,6 @@ function HospitalPageLeft({
   const interaction = useHospitalInteraction();
   const { mouse } = interaction;
   const { accumulatedBlur, darkness, letterFlowIntensity } = useHospitalState();
-  const lite = useBookOneLiteMode();
-  const particles = useMemo(
-    () =>
-      buildLetterParticles("left", lite ? LETTER_COUNT_LITE : LETTER_COUNT),
-    [lite],
-  );
-  const ribbons = lite ? RIBBONS_L.slice(0, 2) : RIBBONS_L;
 
   const parallaxX = (mouse.x - 0.5) * -PARALLAX_X;
   const parallaxY = (mouse.y - 0.5) * -PARALLAX_Y;
@@ -919,7 +699,6 @@ function HospitalPageLeft({
       style={{ background: "#070a12" }}
     >
       <HospitalBackdrop side="left" />
-      <HospitalRibbonSmoke side="left" ribbons={ribbons} />
       <DarknessOverlay darkness={darkness} />
 
       <InteractionLayer {...interaction} />
@@ -961,7 +740,7 @@ function HospitalPageLeft({
 
       <LetterFlow
         side="left"
-        particles={particles}
+        particles={PARTICLES_L}
         intensity={letterFlowIntensity}
       />
 
@@ -1045,13 +824,6 @@ function HospitalPageRight({
   const interaction = useHospitalInteraction();
   const { mouse } = interaction;
   const { accumulatedBlur, darkness, letterFlowIntensity } = useHospitalState();
-  const lite = useBookOneLiteMode();
-  const particles = useMemo(
-    () =>
-      buildLetterParticles("right", lite ? LETTER_COUNT_LITE : LETTER_COUNT),
-    [lite],
-  );
-  const ribbons = lite ? RIBBONS_R.slice(0, 2) : RIBBONS_R;
 
   const parallaxX = (mouse.x - 0.5) * -PARALLAX_X;
   const parallaxY = (mouse.y - 0.5) * -PARALLAX_Y;
@@ -1064,7 +836,6 @@ function HospitalPageRight({
       style={{ background: "#070a12" }}
     >
       <HospitalBackdrop side="right" />
-      <HospitalRibbonSmoke side="right" ribbons={ribbons} />
       <DarknessOverlay darkness={darkness} />
 
       <InteractionLayer {...interaction} />
@@ -1094,7 +865,7 @@ function HospitalPageRight({
 
       <LetterFlow
         side="right"
-        particles={particles}
+        particles={PARTICLES_R}
         intensity={letterFlowIntensity}
       />
 

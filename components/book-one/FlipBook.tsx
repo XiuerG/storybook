@@ -8,7 +8,6 @@ import HospitalPage from "./pages/HospitalPage";
 import StrokePage from "./pages/StrokePage";
 import PantryPage from "./pages/PantryPage";
 import WarmRoomPage from "./pages/WarmRoomPage";
-import { BookOneLiteProvider, useBookOneLiteMode } from "./BookOneLiteContext";
 
 /**
  * Book dimensions — single-page width × height.
@@ -32,9 +31,44 @@ const HEIGHT = 660;
  *
  * Each spread: even index = left page, odd = right page.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function BookOneFlipBookLoaded({ FlipBookComp, bookRef }: { FlipBookComp: React.ComponentType<any>; bookRef: React.MutableRefObject<any> }) {
-  const lite = useBookOneLiteMode();
+export default function FlipBook() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const bookRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [FlipBookComp, setFlipBookComp] = useState<React.ComponentType<any> | null>(null);
+
+  useEffect(() => {
+    import("react-pageflip").then((mod) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const Comp = (mod as any).default ?? mod;
+      setFlipBookComp(() => Comp);
+    });
+  }, []);
+
+  // PageShell dispatches flipbook:next / flipbook:prev (strict by left vs right page).
+  useEffect(() => {
+    const onNext = () => bookRef.current?.pageFlip().flipNext();
+    const onPrev = () => bookRef.current?.pageFlip().flipPrev();
+    window.addEventListener("flipbook:next", onNext);
+    window.addEventListener("flipbook:prev", onPrev);
+    return () => {
+      window.removeEventListener("flipbook:next", onNext);
+      window.removeEventListener("flipbook:prev", onPrev);
+    };
+  }, []);
+
+  if (!FlipBookComp) {
+    return (
+      <div
+        style={{
+          width: WIDTH * 2,
+          height: HEIGHT,
+          background: "rgba(255,255,255,0.015)",
+          borderRadius: 2,
+        }}
+      />
+    );
+  }
 
   // useMouseEvents: false — disable page-flip’s half-book X click logic (right click was
   // sometimes “prev”). disableFlipByClick: library click-flip only on corners. Nav = PageShell.
@@ -52,11 +86,11 @@ function BookOneFlipBookLoaded({ FlipBookComp, bookRef }: { FlipBookComp: React.
       disableFlipByClick
       useMouseEvents={false}
       mobileScrollSupport={false}
-      flippingTime={lite ? 850 : 1100}
+      flippingTime={1100}
       usePortrait={false}
       startPage={0}
-      drawShadow={!lite}
-      maxShadowOpacity={lite ? 0.22 : 0.35}
+      drawShadow
+      maxShadowOpacity={0.35}
       style={{ margin: "0 auto" }}
       className="stf__parent"
     >
@@ -90,54 +124,6 @@ function BookOneFlipBookLoaded({ FlipBookComp, bookRef }: { FlipBookComp: React.
       {/* [13] Back cover */}
       <BackCover />
     </FlipBookComp>
-  );
-}
-
-export default function FlipBook() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const bookRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [FlipBookComp, setFlipBookComp] = useState<React.ComponentType<any> | null>(null);
-
-  useEffect(() => {
-    import("react-pageflip").then((mod) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const Comp = (mod as any).default ?? mod;
-      setFlipBookComp(() => Comp);
-    });
-  }, []);
-
-  // PageShell dispatches flipbook:next / flipbook:prev (strict by left vs right page).
-  useEffect(() => {
-    const onNext = () => bookRef.current?.pageFlip().flipNext();
-    const onPrev = () => bookRef.current?.pageFlip().flipPrev();
-    window.addEventListener("flipbook:next", onNext);
-    window.addEventListener("flipbook:prev", onPrev);
-    return () => {
-      window.removeEventListener("flipbook:next", onNext);
-      window.removeEventListener("flipbook:prev", onPrev);
-    };
-  }, []);
-
-  const placeholder = (
-    <div
-      style={{
-        width: WIDTH * 2,
-        height: HEIGHT,
-        background: "rgba(255,255,255,0.015)",
-        borderRadius: 2,
-      }}
-    />
-  );
-
-  return (
-    <BookOneLiteProvider>
-      {!FlipBookComp ? (
-        placeholder
-      ) : (
-        <BookOneFlipBookLoaded FlipBookComp={FlipBookComp} bookRef={bookRef} />
-      )}
-    </BookOneLiteProvider>
   );
 }
 
