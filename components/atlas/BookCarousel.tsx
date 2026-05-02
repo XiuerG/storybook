@@ -1,13 +1,11 @@
 "use client";
 
-import React, { useCallback, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
 import CarouselCoverAmbient from "./CarouselCoverAmbient";
 
 /* ════════════════════════════════════════════════════════════
-   BOOK CAROUSEL — books on a cylindrical arc (3D rotateY ring).
-   Drag to spin; front card is interactive. Pointer capture only
-   when starting outside the book shell so hover still works.
+   BOOK CAROUSEL — flat horizontal strip; drag to change book.
+   Pointer capture only when starting outside the book shell.
 ================================================================ */
 
 export interface BookEntry {
@@ -63,54 +61,13 @@ const ATLAS_CAROUSEL_COVERS: Record<
   },
 };
 
-const CARD_W = 130;
-const CARD_H = 184;
-const RADIUS = 220;
-/** 书口厚度（3D 窄面），正面时能看到两侧书的侧面 */
-const BOOK_THICK = 14;
+const CARD_W = 168;
+const CARD_H = Math.round((184 / 130) * CARD_W);
+const GAP = 36;
+const SPACING = CARD_W + GAP;
 
-/** 封面左右两侧的书口窄面（与封面共面铰接，随圆柱旋转可见） */
-function BookThicknessEdges({ book }: { book: BookEntry }) {
-  const art = ATLAS_CAROUSEL_COVERS[book.id] ?? ATLAS_CAROUSEL_COVERS["book-one"];
-  const T = BOOK_THICK;
-  const spineL =
-    `linear-gradient(270deg, rgba(0,0,0,0.58) 0%, rgba(42,36,32,0.98) 32%, ${art.base} 52%, rgba(12,10,9,0.99) 100%)`;
-  const spineR =
-    `linear-gradient(90deg, rgba(0,0,0,0.58) 0%, rgba(42,36,32,0.98) 32%, ${art.base} 52%, rgba(12,10,9,0.99) 100%)`;
-  const stripBase = {
-    position: "absolute" as const,
-    top: 0,
-    width: T,
-    height: CARD_H,
-    pointerEvents: "none" as const,
-    zIndex: 0,
-    boxShadow: "inset 0 0 10px rgba(0,0,0,0.5)",
-  };
-
-  return (
-    <>
-      <div
-        aria-hidden
-        style={{
-          ...stripBase,
-          left: -T,
-          transformOrigin: "100% 50%",
-          transform: "rotateY(-90deg)",
-          background: spineL,
-        }}
-      />
-      <div
-        aria-hidden
-        style={{
-          ...stripBase,
-          left: CARD_W,
-          transformOrigin: "0 50%",
-          transform: "rotateY(90deg)",
-          background: spineR,
-        }}
-      />
-    </>
-  );
+function mod(n: number, m: number) {
+  return ((n % m) + m) % m;
 }
 
 interface Props {
@@ -120,19 +77,29 @@ interface Props {
 }
 
 export default function BookCarousel({ books, onSelect, onHover }: Props) {
-  const [rotation, setRotation] = useState(0);
+  const [focus, setFocus] = useState(0);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [cw, setCw] = useState(400);
+  const [dragging, setDragging] = useState(false);
+
   const dragStateRef = useRef<{
     startX: number;
-    startRot: number;
+    startFocus: number;
     moved: number;
     tapBookId: string | null;
     hoverCleared?: boolean;
   } | null>(null);
   const suppressClickRef = useRef(false);
   const lastSelectRef = useRef(0);
-  /** 3D 命中测试不可靠时，用射线结果驱动 HomePage 悬停文案 */
-  const [rayHitBookId, setRayHitBookId] = useState<string | null>(null);
-  const lastEmittedHoverRef = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setCw(el.clientWidth || 400));
+    ro.observe(el);
+    setCw(el.clientWidth || 400);
+    return () => ro.disconnect();
+  }, []);
 
   const openBook = useCallback((id: string) => {
     const now = Date.now();
@@ -141,23 +108,11 @@ export default function BookCarousel({ books, onSelect, onHover }: Props) {
     onSelect(id);
   }, [onSelect]);
 
-  const frontBook =
-    books.reduce<{ book: BookEntry; dist: number } | null>((front, book, i) => {
-      const angle = (i / books.length) * 360;
-      const effective = ((angle + rotation) % 360 + 360) % 360;
-      const dist = Math.min(effective, 360 - effective);
-      if (!front || dist < front.dist) return { book, dist };
-      return front;
-    }, null)?.book ?? books[0];
+  const n = books.length;
+  const frontIndex = mod(Math.round(focus), n);
+  const frontBook = books[frontIndex] ?? books[0];
 
-  const onHoverRef = React.useRef(onHover);
-  onHoverRef.current = onHover;
-
-  React.useEffect(() => {
-    setRayHitBookId(null);
-    lastEmittedHoverRef.current = null;
-    onHoverRef.current(null);
-  }, [frontBook.id]);
+  const panPx = cw / 2 - CARD_W / 2 - focus * SPACING;
 
   const onDragPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -170,14 +125,15 @@ export default function BookCarousel({ books, onSelect, onHover }: Props) {
       if (!bookShell) {
         root.setPointerCapture(e.pointerId);
       }
+      setDragging(true);
       dragStateRef.current = {
         startX: e.clientX,
-        startRot: rotation,
+        startFocus: focus,
         moved: 0,
         tapBookId: bookShell?.dataset.atlasBookId ?? null,
       };
     },
-    [rotation],
+    [focus],
   );
 
   const onPointerMove = useCallback(
@@ -188,34 +144,15 @@ export default function BookCarousel({ books, onSelect, onHover }: Props) {
         s.moved = Math.max(s.moved, Math.abs(dx));
         if (s.moved > 6 && !s.hoverCleared) {
           s.hoverCleared = true;
-          lastEmittedHoverRef.current = null;
           onHover(null);
-          setRayHitBookId(null);
         }
-        setRotation(s.startRot + dx * 0.4);
+        const raw = s.startFocus - dx / SPACING;
+        const clamped = Math.max(-0.35, Math.min(n - 1 + 0.35, raw));
+        setFocus(clamped);
         return;
       }
-
-      const stack = document.elementsFromPoint(e.clientX, e.clientY);
-      let hitId: string | null = null;
-      for (let i = 0; i < Math.min(24, stack.length); i++) {
-        const el = stack[i];
-        if (!(el instanceof Element)) continue;
-        const shell = el.closest("[data-atlas-book-id]");
-        if (shell instanceof HTMLElement && shell.dataset.atlasBookId) {
-          hitId = shell.dataset.atlasBookId;
-          break;
-        }
-      }
-      const resolved = hitId === frontBook.id ? hitId : null;
-      setRayHitBookId(resolved);
-      if (resolved !== lastEmittedHoverRef.current) {
-        lastEmittedHoverRef.current = resolved;
-        if (resolved) onHover(resolved);
-        else onHover(null);
-      }
     },
-    [frontBook.id, onHover],
+    [n, onHover],
   );
 
   const onDragPointerUp = useCallback(
@@ -227,7 +164,6 @@ export default function BookCarousel({ books, onSelect, onHover }: Props) {
         /* noop */
       }
       if (s) {
-        const step = 360 / books.length;
         if (s.moved > 6) {
           suppressClickRef.current = true;
           window.setTimeout(() => {
@@ -249,11 +185,12 @@ export default function BookCarousel({ books, onSelect, onHover }: Props) {
             openBook(s.tapBookId ?? frontBook.id);
           }
         }
-        setRotation((r) => Math.round(r / step) * step);
+        setFocus((f) => Math.max(0, Math.min(n - 1, Math.round(f))));
       }
       dragStateRef.current = null;
+      setDragging(false);
     },
-    [books.length, frontBook.id, openBook],
+    [frontBook.id, n, openBook],
   );
 
   const onCardClick = useCallback(
@@ -266,103 +203,79 @@ export default function BookCarousel({ books, onSelect, onHover }: Props) {
 
   return (
     <div
+      ref={containerRef}
       onPointerDown={onDragPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onDragPointerUp}
       onPointerCancel={onDragPointerUp}
       onPointerLeave={() => {
-        lastEmittedHoverRef.current = null;
-        setRayHitBookId(null);
         onHover(null);
       }}
       style={{
         position: "relative",
         width: "100%",
-        height: 320,
-        perspective: 900,
-        perspectiveOrigin: "50% 50%",
+        height: 380,
         userSelect: "none",
         touchAction: "none",
         cursor: "grab",
-        overflow: "visible",
+        overflow: "hidden",
       }}
     >
-      <motion.div
-        animate={{ rotateY: rotation }}
-        transition={{ type: "spring", stiffness: 180, damping: 26 }}
+      <div
         style={{
           position: "absolute",
-          left: "50%",
+          left: 0,
           top: "50%",
-          transformStyle: "preserve-3d",
-          transformOrigin: "0 0",
-          width: 0,
-          height: 0,
-          pointerEvents: "auto",
-          zIndex: 1,
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          gap: GAP,
+          height: CARD_H,
+          marginTop: -CARD_H / 2,
+          willChange: "transform",
+          transform: `translate3d(${panPx}px,0,0)`,
+          transition: dragging
+            ? "none"
+            : "transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1)",
         }}
       >
         {books.map((book, i) => {
-          const angle = (i / books.length) * 360;
-          const effective = ((angle + rotation) % 360 + 360) % 360;
-          const distFromFront = Math.min(effective, 360 - effective);
-          const visibility = Math.max(0, Math.cos((distFromFront / 180) * (Math.PI / 2)));
-          const isFront = frontBook.id === book.id;
-          const stackZ = Math.max(1, Math.round(1000 - distFromFront * 5));
+          const wrappedDist = Math.min(
+            Math.abs(i - focus),
+            Math.abs(i - focus + n),
+            Math.abs(i - focus - n),
+          );
+          const visibility = Math.max(
+            0,
+            Math.cos((Math.min(wrappedDist, n / 2) / (n / 2)) * (Math.PI / 2)),
+          );
+          const isFront = i === frontIndex;
 
           return (
             <div
               key={book.id}
               style={{
-                position: "absolute",
-                left: -CARD_W / 2,
-                top: -CARD_H / 2,
+                position: "relative",
                 width: CARD_W,
                 height: CARD_H,
-                transform: `rotateY(${angle}deg) translateZ(${RADIUS + (isFront ? 10 : 0)}px)`,
-                transformStyle: "preserve-3d",
-                WebkitTransformStyle: "preserve-3d",
+                flexShrink: 0,
                 pointerEvents: isFront ? "auto" : "none",
-                zIndex: stackZ,
+                zIndex: isFront ? 2 : 1,
               }}
             >
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  transformStyle: "preserve-3d",
-                  WebkitTransformStyle: "preserve-3d",
-                }}
-              >
-                <BookThicknessEdges book={book} />
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    transform: `translateZ(${BOOK_THICK / 2}px)`,
-                    transformStyle: "preserve-3d",
-                    WebkitTransformStyle: "preserve-3d",
-                    zIndex: 2,
-                  }}
-                >
-                  <BookCard
-                    book={book}
-                    visibility={visibility}
-                    isFront={isFront}
-                    interactive={isFront}
-                    rayHit={rayHitBookId === book.id}
-                    faceDegrees={effective}
-                    distFromFrontDeg={distFromFront}
-                    onHover={() => onHover(book.id)}
-                    onLeave={() => onHover(null)}
-                    onClick={() => onCardClick(book.id)}
-                  />
-                </div>
-              </div>
+              <BookCard
+                book={book}
+                visibility={visibility}
+                isFront={isFront}
+                interactive={isFront}
+                onHover={() => onHover(book.id)}
+                onLeave={() => onHover(null)}
+                onClick={() => onCardClick(book.id)}
+              />
             </div>
           );
         })}
-      </motion.div>
+      </div>
 
       <div
         aria-hidden="true"
@@ -371,8 +284,8 @@ export default function BookCarousel({ books, onSelect, onHover }: Props) {
           left: "50%",
           bottom: "8%",
           transform: "translateX(-50%)",
-          width: 360,
-          height: 24,
+          width: 440,
+          height: 28,
           borderRadius: "50%",
           background:
             "radial-gradient(ellipse, rgba(140,160,210,0.18) 0%, transparent 70%)",
@@ -385,16 +298,13 @@ export default function BookCarousel({ books, onSelect, onHover }: Props) {
 }
 
 /* ════════════════════════════════════════════════════════════
-   BOOK CARD — flat cover on the cylinder.
+   BOOK CARD — flat cover.
 ================================================================ */
 function BookCard({
   book,
   visibility,
   isFront,
   interactive = true,
-  rayHit = false,
-  faceDegrees = 0,
-  distFromFrontDeg = 0,
   onHover,
   onLeave,
   onClick,
@@ -403,19 +313,12 @@ function BookCard({
   visibility: number;
   isFront: boolean;
   interactive?: boolean;
-  /** 父级用 elementsFromPoint 命中（圆柱 3D 时 DOM 的 pointerenter 不可靠） */
-  rayHit?: boolean;
-  /** 封面朝向相对观察者的角度（0 = 正对） */
-  faceDegrees?: number;
-  /** 与正面的夹角（0–180），用于侧面影强度 */
-  distFromFrontDeg?: number;
   onHover: () => void;
   onLeave: () => void;
   onClick: () => void;
 }) {
   const [hover, setHover] = useState(false);
   const lastOpenRef = React.useRef(0);
-  const lit = hover || rayHit;
 
   const tryOpen = React.useCallback(() => {
     const t = Date.now();
@@ -435,19 +338,6 @@ function BookCard({
   const W = CARD_W;
   const H = CARD_H;
 
-  const sideT = isFront ? 0 : Math.min(1, distFromFrontDeg / 92);
-  const sinFace = Math.sin((faceDegrees * Math.PI) / 180);
-  const castX = sinFace * (4 + sideT * 22);
-  const castY = 10 + sideT * 14;
-  const castBlur = 14 + sideT * 26;
-  const castAlpha = 0.32 + sideT * 0.34;
-  const sideCoverShadow = !isFront
-    ? `0 ${castY}px ${castBlur}px rgba(0,0,0,${castAlpha * 0.92}),
-       ${castX}px ${castY + 4}px ${castBlur * 0.85}px rgba(0,0,0,${castAlpha * 0.72}),
-       ${castX * 0.5}px ${castY + 2}px ${castBlur * 0.55}px rgba(30,24,40,${0.12 + sideT * 0.2}),
-       inset 0 0 ${12 + sideT * 14}px rgba(0,0,0,${0.12 + sideT * 0.28})`
-    : "";
-
   return (
     <div
       style={{
@@ -458,27 +348,6 @@ function BookCard({
         pointerEvents: interactive && isFront ? "auto" : "none",
       }}
     >
-      {!isFront && sideT > 0.08 && (
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: H - 2,
-            width: W * (1.02 + sideT * 0.28),
-            height: 12 + sideT * 10,
-            marginLeft: (-W * (1.02 + sideT * 0.28)) / 2 + sinFace * 14 * sideT,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(ellipse at center, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.22) 48%, transparent 72%)",
-            filter: "blur(5px)",
-            opacity: (0.42 + sideT * 0.38) * Math.min(1, visibility * 1.15),
-            pointerEvents: "none",
-            zIndex: 0,
-            transition: "opacity 0.35s ease, transform 0.35s ease",
-          }}
-        />
-      )}
       <div
         data-atlas-book-shell
         data-atlas-book-id={interactive ? book.id : undefined}
@@ -504,8 +373,7 @@ function BookCard({
           top: 0,
           width: W,
           height: H,
-          zIndex: 1,
-          transform: lit ? "scale(1.03)" : "scale(1)",
+          transform: hover ? "scale(1.03)" : "scale(1)",
           transition: "transform 0.35s cubic-bezier(0.22,0.61,0.36,1)",
           pointerEvents: interactive && isFront ? "auto" : "none",
           cursor: interactive && isFront ? "pointer" : "default",
@@ -520,14 +388,13 @@ function BookCard({
             top: 0,
             width: W,
             height: H,
-            borderRadius: 4,
+            borderRadius: 5,
             overflow: "hidden",
             backgroundColor: art.base,
-            border: `1px solid ${lit ? "rgba(255,210,170,0.5)" : "rgba(220,210,235,0.22)"}`,
+            border: `1px solid ${hover ? "rgba(255,210,170,0.5)" : "rgba(220,210,235,0.22)"}`,
             boxShadow: isFront
-              ? `0 12px 28px rgba(0,0,0,0.45), 0 0 ${lit ? 22 : 14}px ${book.glow}`
-              : sideCoverShadow || "0 8px 18px rgba(0,0,0,0.4)",
-            transition: "box-shadow 0.45s ease",
+              ? `0 14px 34px rgba(0,0,0,0.45), 0 0 ${hover ? 26 : 16}px ${book.glow}`
+              : "0 10px 22px rgba(0,0,0,0.4)",
           }}
         >
           <div
@@ -558,7 +425,7 @@ function BookCard({
             style={{
               position: "absolute",
               inset: 0,
-              borderRadius: 4,
+              borderRadius: 5,
               overflow: "hidden",
               zIndex: 2,
               pointerEvents: "none",
@@ -586,7 +453,7 @@ function BookCard({
                 fontFamily: "var(--font-serif)",
                 fontStyle: "italic",
                 fontWeight: 300,
-                fontSize: "0.52rem",
+                fontSize: "0.6rem",
                 letterSpacing: "0.28em",
                 color: "rgba(245,232,212,0.82)",
                 textTransform: "uppercase",
@@ -603,7 +470,7 @@ function BookCard({
                 fontFamily: "var(--font-serif)",
                 fontStyle: "italic",
                 fontWeight: 400,
-                fontSize: "0.48rem",
+                fontSize: "0.55rem",
                 lineHeight: 1.3,
                 letterSpacing: "0.05em",
                 color: "rgba(245,232,212,0.92)",

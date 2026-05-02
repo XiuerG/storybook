@@ -18,7 +18,7 @@ import BookOverlay from "./BookOverlay";
 
 const ATLAS_TITLE = "An Atlas of Crossings";
 const ATLAS_SUB = "Four interactive storybooks of memory, return, and home.";
-const ATLAS_HINT = "Drag to rotate · click to open";
+const ATLAS_HINT = "Drag sideways · click to open";
 
 const BOOKS: BookEntry[] = [
   {
